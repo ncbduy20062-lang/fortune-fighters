@@ -1,10 +1,14 @@
-# ElectionBet - Privacy-Preserving Election Prediction Market
+# Fortune Fighters Arena - Privacy-Preserving Battle Prediction Market
 
-A decentralized prediction market built with Fully Homomorphic Encryption (FHE) where users can place encrypted bets on election outcomes. All predictions remain completely private until official results are declared.
+A decentralized prediction market built with Fully Homomorphic Encryption (FHE) where users can place encrypted bets on fighter outcomes. All predictions remain completely private until official results are declared.
 
-## 🌐 Live Demo
+## Demo Video
 
-**Deployed Application**: [https://electionbet.vercel.app](https://electionbet.vercel.app)
+[![Fortune Fighters Demo](https://img.youtube.com/vi/abfwf4IaNjo/0.jpg)](https://youtu.be/abfwf4IaNjo)
+
+## Live Demo
+
+**Deployed Application**: [https://fortune-fighters.vercel.app](https://fortune-fighters.vercel.app)
 
 **Smart Contract** (Sepolia): [0xdA53557D630FFb66473E0A25F70F0e9cAdE79Ac6](https://sepolia.etherscan.io/address/0xdA53557D630FFb66473E0A25F70F0e9cAdE79Ac6)
 
