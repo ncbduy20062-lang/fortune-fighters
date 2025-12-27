@@ -58,13 +58,23 @@ export async function ensureFheInstance() {
     return fheInstance;
   }
 
+  // Check if wallet is connected
+  if (typeof window === 'undefined' || !window.ethereum) {
+    throw new Error('Please connect your wallet first');
+  }
+
   const sdk = await loadFHESDK();
   const { initSDK, createInstance } = sdk;
 
   await initSDK();
 
-  // Use custom config with correct relayer URL
-  fheInstance = await createInstance(CustomSepoliaConfig);
+  // Use custom config with wallet provider
+  const configWithProvider = {
+    ...CustomSepoliaConfig,
+    network: window.ethereum,
+  };
+
+  fheInstance = await createInstance(configWithProvider);
   return fheInstance;
 }
 
