@@ -21,16 +21,19 @@ let fheInstance: RelayerInstance | null = null;
 let sdkModule: any = null;
 
 /**
- * Custom Sepolia config with correct relayer URL
+ * Official Sepolia config from Zama documentation
+ * @see https://docs.zama.org/protocol/solidity-guides/smart-contract/configure/contract_addresses
  */
 const CustomSepoliaConfig = {
   chainId: 11155111,
-  relayerUrl: "https://relayer.testnet.zama.org",
-  aclAddress: "0x339EcE85B9E11a3A3AA557582784a15d7F82AAf2",
-  kmsVerifierAddress: "0x9D6891A6240D6130c54ae243d8005063D05fE14b",
-  inputVerifierAddress: "0x69a9eF6bd73e70a80fD3c0C7a4FBec36B7137CDe",
-  gatewayChainId: 10901,
-  gatewayChainRpc: "https://gateway-testnet.zama.ai/chain",
+  relayerUrl: "https://relayer.testnet.zama.cloud",
+  network: "https://eth-sepolia.public.blastapi.io",
+  aclContractAddress: "0x687820221192C5B662b25367F70076A37bc79b6c",
+  kmsContractAddress: "0x1364cBBf2cDF5032C47d8226a6f6FBD2AFCDacAC",
+  inputVerifierContractAddress: "0xbc91f3daD1A5F19F8390c400196e58073B6a0BC4",
+  verifyingContractAddressDecryption: "0xb6E160B1ff80D67Bfe90A85eE06Ce0A2613607D1",
+  verifyingContractAddressInputVerification: "0x7048C39f048125eDa9d678AEbaDfB22F7900a29F",
+  gatewayChainId: 55815,
 };
 
 /**
