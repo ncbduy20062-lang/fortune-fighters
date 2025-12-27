@@ -21,21 +21,6 @@ let fheInstance: RelayerInstance | null = null;
 let sdkModule: any = null;
 
 /**
- * Official Sepolia config from Zama documentation
- * @see https://docs.zama.org/protocol/solidity-guides/smart-contract/configure/contract_addresses
- */
-const CustomSepoliaConfig = {
-  chainId: 11155111,
-  relayerUrl: "https://relayer.testnet.zama.org",
-  aclContractAddress: "0x687820221192C5B662b25367F70076A37bc79b6c",
-  kmsContractAddress: "0x1364cBBf2cDF5032C47d8226a6f6FBD2AFCDacAC",
-  inputVerifierContractAddress: "0xbc91f3daD1A5F19F8390c400196e58073B6a0BC4",
-  verifyingContractAddressDecryption: "0xb6E160B1ff80D67Bfe90A85eE06Ce0A2613607D1",
-  verifyingContractAddressInputVerification: "0x7048C39f048125eDa9d678AEbaDfB22F7900a29F",
-  gatewayChainId: 55815,
-};
-
-/**
  * Dynamically loads the Zama FHE SDK from CDN
  */
 async function loadFHESDK() {
@@ -58,23 +43,13 @@ export async function ensureFheInstance() {
     return fheInstance;
   }
 
-  // Check if wallet is connected
-  if (typeof window === 'undefined' || !window.ethereum) {
-    throw new Error('Please connect your wallet first');
-  }
-
   const sdk = await loadFHESDK();
-  const { initSDK, createInstance } = sdk;
+  const { initSDK, createInstance, SepoliaConfig } = sdk;
 
   await initSDK();
 
-  // Use custom config with wallet provider
-  const configWithProvider = {
-    ...CustomSepoliaConfig,
-    network: window.ethereum,
-  };
-
-  fheInstance = await createInstance(configWithProvider);
+  // Use built-in SepoliaConfig from SDK
+  fheInstance = await createInstance(SepoliaConfig);
   return fheInstance;
 }
 
