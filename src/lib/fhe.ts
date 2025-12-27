@@ -27,7 +27,6 @@ let sdkModule: any = null;
 const CustomSepoliaConfig = {
   chainId: 11155111,
   relayerUrl: "https://relayer.testnet.zama.org",
-  network: "https://eth-sepolia.public.blastapi.io",
   aclContractAddress: "0x687820221192C5B662b25367F70076A37bc79b6c",
   kmsContractAddress: "0x1364cBBf2cDF5032C47d8226a6f6FBD2AFCDacAC",
   inputVerifierContractAddress: "0xbc91f3daD1A5F19F8390c400196e58073B6a0BC4",
