@@ -1,6 +1,5 @@
 import { getElectionContractAddress } from "@/lib/config";
 import { hexlify } from "ethers";
-import { createInstance, initSDK, SepoliaConfig } from "@zama-fhe/relayer-sdk";
 
 /**
  * FHE (Fully Homomorphic Encryption) Utilities for Fortune Fighters
@@ -12,38 +11,58 @@ import { createInstance, initSDK, SepoliaConfig } from "@zama-fhe/relayer-sdk";
  * @see https://docs.zama.ai/fhevm
  */
 
-// Type definition for Zama FHE instance
-type RelayerInstance = Awaited<ReturnType<typeof createInstance>>;
+// Type definition for Zama FHE instance (loaded dynamically)
+type RelayerInstance = any;
 
 // Singleton instance of FHE SDK
 let fheInstance: RelayerInstance | null = null;
 
-// SDK initialized flag
-let sdkInitialized = false;
+// Cached SDK module to avoid repeated CDN loads
+let sdkModule: any = null;
+
+/**
+ * Custom Sepolia config with correct relayer URL
+ */
+const CustomSepoliaConfig = {
+  chainId: 11155111,
+  relayerUrl: "https://relayer.testnet.zama.org",
+  aclAddress: "0x339EcE85B9E11a3A3AA557582784a15d7F82AAf2",
+  kmsVerifierAddress: "0x9D6891A6240D6130c54ae243d8005063D05fE14b",
+  inputVerifierAddress: "0x69a9eF6bd73e70a80fD3c0C7a4FBec36B7137CDe",
+  gatewayChainId: 10901,
+  gatewayChainRpc: "https://gateway-testnet.zama.ai/chain",
+};
+
+/**
+ * Dynamically loads the Zama FHE SDK from CDN
+ */
+async function loadFHESDK() {
+  if (sdkModule) return sdkModule;
+
+  try {
+    sdkModule = await import('https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js');
+    return sdkModule;
+  } catch (error) {
+    console.error('[FHE] Failed to load SDK from CDN:', error);
+    throw new Error('Failed to load FHE SDK. Please check your internet connection.');
+  }
+}
 
 /**
  * Ensures FHE instance is initialized and returns it
- *
- * This function implements a singleton pattern to avoid repeatedly
- * initializing the FHE SDK, which is an expensive operation.
- *
- * @returns Initialized FHE SDK instance
- * @throws Error if SDK initialization fails
  */
-export async function ensureFheInstance(): Promise<RelayerInstance> {
-  // Return existing instance if already initialized
+export async function ensureFheInstance() {
   if (fheInstance) {
     return fheInstance;
   }
 
-  // Initialize WASM and crypto libraries (one-time setup)
-  if (!sdkInitialized) {
-    await initSDK();
-    sdkInitialized = true;
-  }
+  const sdk = await loadFHESDK();
+  const { initSDK, createInstance } = sdk;
 
-  // Create FHE instance configured for Sepolia testnet
-  fheInstance = await createInstance(SepoliaConfig);
+  await initSDK();
+
+  // Use custom config with correct relayer URL
+  fheInstance = await createInstance(CustomSepoliaConfig);
   return fheInstance;
 }
 
@@ -51,49 +70,28 @@ export async function ensureFheInstance(): Promise<RelayerInstance> {
  * Result of encrypting user prediction data
  */
 interface EncryptionResult {
-  candidateHandle: `0x${string}`;  // Encrypted fighter ID (euint32)
-  stakeHandle: `0x${string}`;      // Encrypted stake amount (euint64)
-  proof: `0x${string}`;             // Zero-knowledge proof for verification
+  candidateHandle: `0x${string}`;
+  stakeHandle: `0x${string}`;
+  proof: `0x${string}`;
 }
 
 /**
  * Encrypts user's bet using FHE
- *
- * This function encrypts both the fighter choice and bet amount
- * in the user's browser before submitting to the blockchain.
- *
- * Privacy guarantees:
- * - Fighter choice remains encrypted on-chain
- * - Bet amount remains encrypted on-chain
- * - Only the user can decrypt their own data (via ACL permissions)
- * - Smart contract can perform computations on encrypted data
- *
- * @param walletAddress - User's Ethereum wallet address
- * @param candidateIndex - Fighter ID (0, 1, 2)
- * @param stakeWei - Bet amount in wei
- * @returns Encrypted handles and cryptographic proof
  */
 export async function encryptElectionPrediction(
   walletAddress: `0x${string}`,
   candidateIndex: number,
   stakeWei: bigint,
 ): Promise<EncryptionResult> {
-  // Ensure FHE SDK is initialized
   const fhe = await ensureFheInstance();
 
-  // Create encrypted input for the smart contract
   const input = fhe.createEncryptedInput(getElectionContractAddress(), walletAddress);
 
-  // Encrypt fighter ID as 32-bit unsigned integer (euint32)
   input.add32(candidateIndex);
-
-  // Encrypt stake amount as 64-bit unsigned integer (euint64)
   input.add64(stakeWei);
 
-  // Generate encrypted handles and zero-knowledge proof
   const { handles, inputProof } = await input.encrypt();
 
-  // Use hexlify from ethers.js to convert byte arrays to hex strings
   const candidateHandle = hexlify(handles[0]) as `0x${string}`;
   const stakeHandle = hexlify(handles[1]) as `0x${string}`;
   const proof = hexlify(inputProof) as `0x${string}`;
@@ -113,19 +111,11 @@ export async function encryptElectionPrediction(
 
 /**
  * Decrypt encrypted data using Gateway public decryption
- * Requires ACL permission to be granted on-chain via FHE.allow()
- *
- * @param encryptedHandle - The encrypted handle (bytes32) to decrypt
- * @returns The decrypted value as bigint
- * @throws Error if decryption fails or ACL permission not granted
  */
 export async function decryptValue(encryptedHandle: `0x${string}`): Promise<bigint> {
   try {
     const fhe = await ensureFheInstance();
-
-    // Gateway public decryption - requires ACL permission
     const decrypted = await fhe.publicDecrypt(getElectionContractAddress(), encryptedHandle);
-
     return decrypted;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -141,9 +131,6 @@ export async function decryptValue(encryptedHandle: `0x${string}`): Promise<bigi
 
 /**
  * Decrypt multiple encrypted values in batch
- *
- * @param handles - Array of encrypted handles to decrypt
- * @returns Array of decrypted values as bigint[]
  */
 export async function decryptBatch(handles: `0x${string}`[]): Promise<bigint[]> {
   const results = await Promise.allSettled(
@@ -155,7 +142,7 @@ export async function decryptBatch(handles: `0x${string}`[]): Promise<bigint[]> 
       return result.value;
     } else {
       console.warn(`Failed to decrypt handle at index ${index}:`, result.reason);
-      return 0n; // Return 0 for failed decryption
+      return 0n;
     }
   });
 }
